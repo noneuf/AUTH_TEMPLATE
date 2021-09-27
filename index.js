@@ -1,5 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 
 const app = express();
 const port = 3000;
@@ -26,6 +27,15 @@ const usersWithHashedPasswords = [
   },
 ];
 
+const sessions = {};
+
+const generateTokenForUSer = (user) => {
+  const sessionId = crypto.randomBytes(64).toString('hex');
+
+  sessions[sessionId] = user.id;
+  return sessionId;
+};
+
 app.post('/login', async (request, response) => {
   const username = request.body.username;
   const password = request.body.password;
@@ -38,8 +48,11 @@ app.post('/login', async (request, response) => {
     user && (await bcrypt.compare(password, user.password));
 
   if (isPasswordTheSame) {
+    const sessionId = generateTokenForUSer(user);
     return response.status(200).send({
       message: `Welcome ${username}, you are successfully logged in.`,
+      sessionId,
+      sessions,
     });
   }
 
